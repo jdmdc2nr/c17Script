@@ -1,0 +1,294 @@
+//*********** Automatically Created Variables: Begin *************
+    
+	
+{
+	// Standard failure case checks
+    m_Cam1_Grab_ResultBoolean = get_input_integer("Cam1_Grab_ResultBoolean");
+    m_Cam1_Grab_ExecutedBoolean = get_input_integer("Cam1_Grab_ExecutedBoolean");
+	m_LightMeter_Part_ResultBoolean = get_input_integer("LightMeter_Part_ResultBoolean");
+    m_LightMeter_Part_ExecutedBoolean = get_input_integer("LightMeter_Part_ExecutedBoolean");
+	
+	
+	// Find label position
+    m_CaliperTool_YRight_ExecutedBoolean = get_input_integer("CaliperTool_YRight_ExecutedBoolean");
+    m_CaliperTool_YRight_ResultBoolean = get_input_integer("CaliperTool_YRight_ResultBoolean");
+    m_CaliperTool_XBottom_ExecutedBoolean = get_input_integer("CaliperTool_XBottom_ExecutedBoolean");
+    m_CaliperTool_XBottom_ResultBoolean = get_input_integer("CaliperTool_XBottom_ResultBoolean");
+    m_CaliperTool_YLeft_ResultBoolean = get_input_integer("CaliperTool_YLeft_ResultBoolean");
+    m_CaliperTool_YLeft_ExecutedBoolean = get_input_integer("CaliperTool_YLeft_ExecutedBoolean");
+    m_CaliperTool_XTop_ExecutedBoolean = get_input_integer("CaliperTool_XTop_ExecutedBoolean");
+    m_CaliperTool_XTop_ResultBoolean = get_input_integer("CaliperTool_XTop_ResultBoolean");
+	
+	
+	
+	// OCR results right side verification
+	m_OCR_Date_ResultBoolean = get_input_integer("OCR_Date_ResultBoolean");
+    m_OCR_Date_ExecutedBoolean = get_input_integer("OCR_Date_ExecutedBoolean");
+    m_OCR_Cav_ResultBoolean = get_input_integer("OCR_Cav_ResultBoolean");
+    m_OCR_Cav_ExecutedBoolean = get_input_integer("OCR_Cav_ExecutedBoolean");
+    m_OCR_Lot_ResultBoolean = get_input_integer("OCR_Lot_ResultBoolean");
+    m_OCR_Lot_ExecutedBoolean = get_input_integer("OCR_Lot_ExecutedBoolean");
+
+	// OCR and Blob tool for left side verification
+	m_BlobTool_DateSymbol_ExecutedBoolean = get_input_integer("BlobTool_DateSymbol_ExecutedBoolean");
+    m_BlobTool_DateSymbol_ResultBoolean = get_input_integer("BlobTool_DateSymbol_ResultBoolean");
+    m_OCR_Cav_static_ExecutedBoolean = get_input_integer("OCR_Cav_static_ExecutedBoolean");
+    m_OCR_Cav_static_ResultBoolean = get_input_integer("OCR_Cav_static_ResultBoolean");
+    m_OCR_Lot_static_ExecutedBoolean = get_input_integer("OCR_Lot_static_ExecutedBoolean");
+    m_OCR_Lot_static_ResultBoolean = get_input_integer("OCR_Lot_static_ResultBoolean");
+	
+	// Edge detect for drawing ROI
+    m_EdgeTool_LocY_ExecutedBoolean = get_input_integer("EdgeTool_LocY_ExecutedBoolean");
+    m_EdgeTool_LocY_ResultBoolean = get_input_integer("EdgeTool_LocY_ResultBoolean");
+    m_EdgeTool_LocX_ExecutedBoolean = get_input_integer("EdgeTool_LocX_ExecutedBoolean");
+    m_EdgeTool_LocX_ResultBoolean = get_input_integer("EdgeTool_LocX_ResultBoolean");
+	
+	// Matrox OCR results
+	m_mOCR_Lot_static_ExecutedBoolean = get_input_integer("mOCR_Lot_static_ExecutedBoolean");
+    m_mOCR_Lot_static_ResultBoolean = get_input_integer("mOCR_Lot_static_ResultBoolean");
+    m_mOCR_Cav_static_ExecutedBoolean = get_input_integer("mOCR_Cav_static_ExecutedBoolean");
+    m_mOCR_Cav_static_ResultBoolean = get_input_integer("mOCR_Cav_static_ResultBoolean");
+    m_mOCR_Cav_ExecutedBoolean = get_input_integer("mOCR_Cav_ExecutedBoolean");
+    m_mOCR_Cav_ResultBoolean = get_input_integer("mOCR_Cav_ResultBoolean");
+    m_mOCR_Date_ExecutedBoolean = get_input_integer("mOCR_Date_ExecutedBoolean");
+    m_mOCR_Date_ResultBoolean = get_input_integer("mOCR_Date_ResultBoolean");
+    m_mOCR_Lot_ExecutedBoolean = get_input_integer("mOCR_Lot_ExecutedBoolean");
+    m_mOCR_Lot_ResultBoolean = get_input_integer("mOCR_Lot_ResultBoolean");
+	
+
+}
+//*********** Automatically Created Variables: End *************
+set_current_buffer(0);
+// Inspection result codes
+/*
+UnknownFail = 1;
+Pass = 2;
+AcquisitionFail = 4;
+LightFail = 8;
+TextPositionFail = 16;
+LotRecgonitionFail = 32;
+CavRecognitionFail = 64;
+DateRecognitionFail = 128;
+*/
+UnknownFail = 0;
+Pass = 1;
+AcquisitionFail = 2;
+LightFail = 3;
+TextPositionFail = 4;
+LotRecgonitionFail = 5;
+CavRecognitionFail = 6;
+DateRecognitionFail = 7;
+
+// Function to parse the date from the Matrox OCR result
+static parse_date(input_str)
+{
+	output_str = strbuf();
+	for(i=0; i<=3;++i)
+	{
+		output_str = strcat(output_str,input_str[i]);
+	}
+		
+	for(i=5; i<=6;++i)
+	{
+		output_str = strcat(output_str,input_str[i]);
+	}
+	
+	for(i=8; i<=9;++i)
+	{
+		output_str = strcat(output_str,input_str[i]);
+	}
+	return output_str;
+}
+
+
+// Init inspection status
+InspectionStatus = UnknownFail;
+
+set_step_pass();
+
+if(m_Cam1_Grab_ResultBoolean && m_Cam1_Grab_ExecutedBoolean)
+{
+	// Grab passed
+	
+	// Expected strings from PLC 
+	m_scrInit_dateCharOut = get_input_string("scrInit_dateCharOut");
+    m_scrInit_cavCharOut = get_input_string("scrInit_cavCharOut");
+    m_scrInit_lotCharOut = get_input_string("scrInit_lotCharOut");
+	
+	if(m_LightMeter_Part_ExecutedBoolean && m_LightMeter_Part_ResultBoolean)
+	{
+		// Light check passed
+		if(m_EdgeTool_LocY_ExecutedBoolean && m_EdgeTool_LocY_ResultBoolean && m_EdgeTool_LocX_ExecutedBoolean && m_EdgeTool_LocX_ResultBoolean && m_BlobTool_DateSymbol_ResultBoolean)
+		{
+			// Found all edges for placement
+			m_EdgeTool_LocY_LocationY = get_input_float("EdgeTool_LocY_LocationY");
+			m_EdgeTool_LocX_LocationX = get_input_float("EdgeTool_LocX_LocationX");
+			
+			if(m_mOCR_Date_ResultBoolean)
+			{
+				MatroxDateRead = parse_date(get_input_string("mOCR_Date_ReadResult"));
+			}
+			else
+			{
+				MatroxDateRead = "NA";
+			}
+			
+			// Check if the Matrox date matches the PLC date string
+			if (m_scrInit_dateCharOut == MatroxDateRead)
+			{
+				mDateResult = 1;
+				
+			}
+			else
+			{
+				mDateResult = 0;
+				
+			}
+			
+			// Create booleans - if either Matrox OR ATS OCR is successful, then the inspection passes
+			LotStatic_result = m_OCR_Lot_static_ResultBoolean || m_mOCR_Lot_static_ResultBoolean;
+			Lot_result = m_OCR_Lot_ResultBoolean || m_mOCR_Lot_ResultBoolean;
+			CavStatic_result = m_OCR_Cav_static_ResultBoolean || m_mOCR_Cav_static_ResultBoolean;
+			Cav_result = m_mOCR_Cav_ResultBoolean || m_OCR_Cav_ResultBoolean;
+			Date_result = m_OCR_Date_ResultBoolean || mDateResult;
+			
+			
+			if(LotStatic_result && CavStatic_result && m_BlobTool_DateSymbol_ResultBoolean)
+			{
+				m_scrTextLocation_ResultBoolean = get_input_integer("scrTextLocation_ResultBoolean");
+				// Found all static text/symbols "Cav:", "Lot:", *Manufacture Symbol*
+				if(LotStatic_result && Lot_result && CavStatic_result && Cav_result && Date_result && m_scrTextLocation_ResultBoolean)
+				{
+					// Part pass, text is correct and legible
+					draw_text("Print Recognition Pass","green",4, 50, 50);
+					InspectionStatus = Pass;
+				}
+				else
+				{					
+					m_OCR_Date_ReadResult = get_input_string("OCR_Date_ReadResult");
+					m_OCR_Cav_ReadResult = get_input_string("OCR_Cav_ReadResult");
+					m_OCR_Lot_ReadResult = get_input_string("OCR_Lot_ReadResult");
+					
+					m_scrTextLocation_ResultBoolean = get_input_integer("scrTextLocation_ResultBoolean");
+					
+					printf("Text results: date = %s, cav = %s, lot = %s \n",m_OCR_Date_ReadResult,m_OCR_Cav_ReadResult,m_OCR_Lot_ReadResult);
+					
+					if(nels(m_OCR_Date_ReadResult)<8 && nels(m_OCR_Lot_ReadResult)<7 || m_scrTextLocation_ResultBoolean==0)
+					{
+						InspectionStatus = TextPositionFail;
+						draw_text("Text Position Fail","red",4,50,50);
+						printf("Failed checking string lengths \n");
+						set_step_fail();
+					}
+					else
+					{
+						draw_text("Print Recognition Fail","red",4, 50, 50);
+						set_step_fail();
+						if(Lot_result ==0)
+						{
+							// Failed to recognize text, print the expected text on the screen
+							//InspectionStatus = InspectionStatus + LotRecgonitionFail;
+							InspectionStatus = LotRecgonitionFail;
+							text = sprintf("Lot Fail - Expected \"%s\". Found \"%s\" ", m_scrInit_lotCharOut,m_OCR_Lot_ReadResult);
+							draw_text(text,"red",2,50,100);
+						}
+						if(Cav_result ==0)
+						{
+							// Failed to recognize cavity text, print the expected text on the screen
+							// InspectionStatus = InspectionStatus + CavRecognitionFail;
+							InspectionStatus = CavRecognitionFail;
+							text = sprintf("Cav Fail - Expected \"%s\". Found \"%s\" ", m_scrInit_cavCharOut,m_OCR_Cav_ReadResult);
+							draw_text(text,"red",2,50,125);
+						
+						}
+						if(Date_result ==0)
+						{
+							// Failed to recognize the date text, print the expected text on the screen
+							// InspectionStatus = InspectionStatus + DateRecognitionFail;
+							InspectionStatus = DateRecognitionFail;
+							text = sprintf("Date Fail - Expected \"%s\". Found \"%s\" ", m_scrInit_dateCharOut,m_OCR_Date_ReadResult);
+							draw_text(text,"red",2,50,150);
+						}
+					}
+				}
+			}
+			else
+			{
+				if(m_CaliperTool_YRight_ExecutedBoolean && m_CaliperTool_YRight_ResultBoolean && m_CaliperTool_YLeft_ExecutedBoolean && m_CaliperTool_YLeft_ResultBoolean && 
+				m_CaliperTool_XTop_ExecutedBoolean && m_CaliperTool_XBottom_ExecutedBoolean && m_CaliperTool_XTop_ResultBoolean && m_CaliperTool_XBottom_ResultBoolean)
+				{
+					// Was able to find label box OK
+					// Failed to find static text/symbols
+					InspectionStatus = TextPositionFail;
+					text = sprintf("Text Locate Fail");
+					draw_text(text,"red",4,50,50);
+					set_step_fail();
+				}
+				else
+				{
+					// Could not find label box
+					InspectionStatus = TextPositionFail;
+					text = sprintf("Label Position Fail");
+					draw_text(text,"red",4,50,50);
+					set_step_fail();
+					
+				}
+			}
+		}
+		else
+		{
+			if(m_BlobTool_DateSymbol_ResultBoolean==0)
+			{
+				// Did not find text on the label box
+				draw_text("Text Locate Fail", "red", 4,50,50);
+				InspectionStatus = TextPositionFail;
+				set_step_fail();
+			}
+			else
+			{
+				// Did not find label
+				draw_text("Label Position Fail", "red", 4,50,50);
+				InspectionStatus = TextPositionFail;
+				set_step_fail();
+			}
+		}
+	}
+	else
+	{
+		// Light/part presence level fail
+		InspectionStatus = LightFail;
+		draw_text("Fail - Light level or part presence","red",3,50,50);
+		set_step_fail();
+		
+	}
+}
+else
+{
+	// Acquisition fail
+	InspectionStatus = AcquisitionFail;
+	draw_text("Fail - Acquisition","red",4,300,50);
+	set_step_fail();
+}
+
+
+
+
+if(get_global("Offline")==0)
+{
+	set_eip_dint(0,InspectionStatus);
+	
+}
+else
+{
+	// Do nothing
+	printf("Ethernet IP not active");
+}
+
+if(InspectionStatus==Pass)
+{
+	run_step("LogStep_Pass");
+}
+else
+{
+	run_step("LogStep_Fail");
+}
